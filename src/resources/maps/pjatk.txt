@@ -1,0 +1,11 @@
+rb2b; t2b; t2b; t2b;
+l2b; dot r,d; dot r,l; dot r,l; dot r,l;
+l2b; dot u,d; rb1b; b1b; b1b; b1b; b1b; lb1b;
+l2b; dot u,d; r1b; lt1ib; t1b; t1b; rt1ib; l1b; dot r,d; rb1b; b1b; b1b; lb1b;
+l2b; dot u,d; r1b; l1b; dot r,d; enrgzr r,l; r1b; l1b; dot u,d; rt1b; rt1ib; lt1ib; lt1b;
+l2b; dot u,d; r1b; l1b; dot u,d; b1b; rb1ib; l1b; dot r,u,d; dot l,d; r1b; l1b; dot r,d;
+l2b; dot u,d; r1b; l1b; dot u,d; t1b; t1b; lt1b; dot r,u; dot l,u; r1b; l1b;
+l2b; dot u,d; r1b; l1b; dot r,u,d; dot r,l; dot r,l; dot l,u,d; rb1b; b1b; rb1ib; l1b;
+l2b; dot u,d; rt1b; lt1b; dot r,u,d; dot r,l,u,d; dot ; dot; rt1b; t1b; t1b; lt1b;
+l2b; dot r,u; dot r,u; dot r,u;
+rt2b; b2b; b2b; b2b; b2b; b2b; b2b; b2b; b2b;

@@ -1,46 +1,56 @@
+
 import java.awt.*;
 import javax.swing.ImageIcon;
 
 public class Player extends Entity implements Runnable {
-    private int lives;
+    private volatile int lives;
+    private boolean isDead = false;
+    private volatile boolean immortal = false;
+    private int timestamp = -1;
     private String[] queue = new String[2];
     private ImageIcon pacmanClosed = new ImageIcon(
-                                        new ImageIcon(".\\src\\resources\\assets\\pacmanClosed.png")
-                                            .getImage()
-                                            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+        new ImageIcon(".\\src\\resources\\assets\\pacmanClosed.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
     private ImageIcon pacmanQuar = new ImageIcon(
-                                        new ImageIcon(".\\src\\resources\\assets\\pacmanQuar.png")
-                                            .getImage()
-                                            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+        new ImageIcon(".\\src\\resources\\assets\\pacmanQuar.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
     private ImageIcon pacmanThird = new ImageIcon(
-                                        new ImageIcon(".\\src\\resources\\assets\\pacmanThird.png")
-                                            .getImage()
-                                            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
-    
-    private String pacmanHalf = ".\\src\\resources\\assets\\pacmanHalf.png";
-    private String pacmanDyingHalf = ".\\src\\resources\\assets\\pacmanDyingHalf.png";
-    private String pacmanDying = ".\\src\\resources\\assets\\pacmanDying.png";
-    private String pacmanPoof = ".\\src\\resources\\assets\\pacmanPoof.png";
+        new ImageIcon(".\\src\\resources\\assets\\pacmanThird.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    private ImageIcon pacmanHalf = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\pacmanHalf.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    private ImageIcon pacmanDyingHalf = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\pacmanDyingHalf.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    private ImageIcon pacmanDying = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\pacmanDying.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    private ImageIcon pacmanPoof = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\pacmanPoof.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
 
-    public Player(int x, int y) {
-        super(x, y);
+    public Player(int x, int y, Thread thread, GameTimer timer) {
+        super(x, y, thread, timer);
         this.lives = 3;
-        this.speed = 10;
         setIcon(pacmanClosed);
         setBounds(x, y, Cell.length, Cell.length);
     }
 
     public void go(int dx, int dy, Cell currCell) {
-        // System.out.println(this.x + ", " + this.y);
         if (currCell.checkPortal() && validJump(currCell)) {
             x = dx;
             y = dy;
             setLocation(x, y);
             return;
         }
-        System.out.println("current on " + x + " and " + y);
-        System.out.println("Direction " + this.queue[0] + " alt, " + this.queue[1]);
-        // System.out.println("now on " + currCell.getX() + ", " + currCell.getY() + currCell.getType());
         if (((dx == 1 && currCell.getMoveR()) || (dx == -1 && currCell.getMoveL())) && validPosY()) {
             x += dx;
         } else if (((dy == 1 && currCell.getMoveD()) || (dy == -1 && currCell.getMoveU())) && validPosX()) {
@@ -60,7 +70,11 @@ public class Player extends Entity implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (running) {
+            if (timestamp != -1 && timer.getTotalTime() >= timestamp) {
+                immortal = false;
+                timestamp = -1;
+            }
             Point p;
             Cell currCell = getCell(this);
             // System.out.println("cell x: " + currCell.getX() + ", y: " + currCell.getY());
@@ -73,7 +87,7 @@ public class Player extends Entity implements Runnable {
             }
             go(p.x, p.y, currCell);
             // double angle;
-            if (this.x % Cell.length / 2 == 0 && this.y % Cell.length / 2 == 0) {
+            if (this.x % Cell.length / 2 == 0 && this.y % Cell.length / 2 == 0 && queue[0] != null) {
                 // angle = (this.queue[0] != null) ? switch (this.queue[0]) {
                 //     case "r" -> 0;
                 //     case "l" -> 180;
@@ -94,9 +108,11 @@ public class Player extends Entity implements Runnable {
             }
             
             try {
-                Thread.sleep(10);
+                if (interrupted) {
+                    this.thread.interrupt();
+                }
+                Thread.sleep(speed);
             } catch (InterruptedException e) {
-                e.printStackTrace();
             }
         }
     }
@@ -201,7 +217,7 @@ public class Player extends Entity implements Runnable {
     
 
     @Override
-    public Cell getCell(Entity e) {
+    public synchronized Cell getCell(Entity e) {
         Cell cell = null;    
     
         for (Cell[] row : Board.cells) {
@@ -219,11 +235,11 @@ public class Player extends Entity implements Runnable {
         return cell;
     }
 
-    public int getLives() {
+    public synchronized int getLives() {
         return lives;
     }
 
-    public void setLives(int lives) {
+    public synchronized void setLives(int lives) {
         this.lives = lives;
     }
 
@@ -238,4 +254,44 @@ public class Player extends Entity implements Runnable {
             this.queue[1] = this.queue[0].equals(direction) ? null : direction;
         }
     }
+
+    protected synchronized boolean isDead() {
+        return isDead;
+    }
+
+    protected synchronized void setDead(boolean isDead) {
+        this.isDead = isDead;
+    }
+
+    protected synchronized void die() {
+        if (lives == 0) {
+            isDead = true;
+            try {
+                setIcon(pacmanHalf);
+                Thread.sleep(defaultSpeed * 3);
+                setIcon(pacmanDyingHalf);
+                Thread.sleep(defaultSpeed * 3);
+                setIcon(pacmanDying);
+                Thread.sleep(defaultSpeed * 3);
+                setIcon(pacmanPoof);
+                Thread.sleep(defaultSpeed * 3);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            stopThread();
+        } else {
+            lives -= 1;
+            timestamp = timer.getTotalTime() + 2;
+            immortal = true;
+        }
+    }
+
+    protected synchronized boolean isImmortal() {
+        return this.immortal;
+    }
+
+    protected synchronized void setImmortal(boolean immortal) {
+        this.immortal = immortal;
+    }
+
 }

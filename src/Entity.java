@@ -1,35 +1,40 @@
+
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.BufferedImage;
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 public abstract class Entity extends JLabel {
-    protected int x;
-    protected int y;
-    protected int speed;
+    protected volatile boolean interrupted = false;
+    protected volatile int x;
+    protected volatile int y;
     protected boolean outside = true;
+    protected Thread thread;
+    protected GameTimer timer;
+    protected volatile boolean running = true;
+    protected final static int defaultSpeed = 5;
+    protected int speed = defaultSpeed;
 
-    public Entity(int x, int y) {
+    public Entity(int x, int y, Thread thread, GameTimer timer) {
         this.x = x;
         this.y = y;
+        this.thread = thread;
+        this.timer = timer;
     }
 
     @Override
-    public int getX() {
+    public synchronized int getX() {
         return x;
     }
 
-    public void setX(int x) {
+    public synchronized void setX(int x) {
         this.x = x;
     }
 
     @Override
-    public int getY() {
+    public synchronized int getY() {
         return y;
     }
 
-    public void setY(int y) {
+    public synchronized void setY(int y) {
         this.y = y;
     }
 
@@ -41,7 +46,7 @@ public abstract class Entity extends JLabel {
         this.speed = speed;
     }
 
-    public Cell getCell(Entity e) {
+    public synchronized Cell getCell(Entity e) {
         // Cell cell = null;    
     
         // for (Cell[] row : Board.cells) {
@@ -64,16 +69,45 @@ public abstract class Entity extends JLabel {
         return p;
     }
 
-    public ImageIcon rotateImage(Image image, double angle) {
-        BufferedImage rotated = new BufferedImage(Cell.length, Cell.length, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2d = rotated.createGraphics();
+    // public ImageIcon rotateImage(Image image, double angle) {
+    //     BufferedImage rotated = new BufferedImage(Cell.length, Cell.length, BufferedImage.TYPE_INT_ARGB);
+    //     Graphics2D g2d = rotated.createGraphics();
 
-        AffineTransform at = new AffineTransform();
-        at.rotate(angle, Cell.length / 2, Cell.length / 2);
-        g2d.setTransform(at);
-        g2d.drawImage(image, 0, 0, null);
-        g2d.dispose();
+    //     AffineTransform at = new AffineTransform();
+    //     at.rotate(angle, Cell.length / 2, Cell.length / 2);
+    //     g2d.setTransform(at);
+    //     g2d.drawImage(image, 0, 0, null);
+    //     g2d.dispose();
 
-        return new ImageIcon(rotated);
+    //     return new ImageIcon(rotated);
+    // }
+
+    protected synchronized boolean isOutside() {
+        return this.outside;
+    }
+
+    protected synchronized void setOutside(boolean outside) {
+        this.outside = outside;
+    }
+    
+    protected Thread getThread() {
+        return thread;
+    }
+
+    protected void setThread(Thread thread) {
+        this.thread = thread;
+    }
+
+    protected void stopThread() {
+        running = false;
+    }
+
+    protected void resumeThread() {
+        running = true;
+    }
+
+    protected void interrupt() {
+        this.interrupted = true;
+        this.stopThread();
     }
 }

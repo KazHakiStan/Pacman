@@ -1,7 +1,6 @@
+
 import java.awt.*;
-import java.io.File;
 import java.util.ArrayList;
-import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
@@ -15,7 +14,8 @@ public class Cell extends JLabel {
         GATE,
         EMPTY,
         VOID,
-        PORTAL
+        PORTAL,
+        SPAWN
     }
 
     protected static final int length = 20;
@@ -23,13 +23,38 @@ public class Cell extends JLabel {
     private final int y;
     private final CellType type;
     private String imagePath = "";
-    private Image image = null;
+    private boolean isContent = false;
     private boolean moveU = false;
     private boolean moveD = false;
     private boolean moveL = false;
     private boolean moveR = false;
     private String portal = null;
     protected static ArrayList<Cell> portals = new ArrayList<>();
+    protected String upgrade = null;
+    protected ImageIcon doubleMult = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\double.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    protected ImageIcon immortality = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\immortality.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    protected ImageIcon speed = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\speed.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    protected ImageIcon food = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\food.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    protected ImageIcon enrgzr = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\energizer.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
+    protected ImageIcon dot = new ImageIcon(
+        new ImageIcon(".\\src\\resources\\assets\\dot2.png")
+            .getImage()
+            .getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH));
 
     public class Portal {
         private final int x;
@@ -63,11 +88,6 @@ public class Cell extends JLabel {
             if (!parts[0].equals("void")) {
                 this.type = CellType.WALL;
                 this.imagePath = ".\\src\\resources\\assets\\" + parts[0] + ".png";
-                try {
-                    this.image = ImageIO.read(new File(this.imagePath));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
             } else {
                 this.type = CellType.VOID;
             }
@@ -84,10 +104,11 @@ public class Cell extends JLabel {
                 case "gate" -> this.type = CellType.GATE;
                 case "dot" -> {
                     this.type = CellType.DOT;
-                    this.imagePath = ".\\src\\resources\\assets\\dot.png";
+                    this.imagePath = ".\\src\\resources\\assets\\dot2.png";
                     ImageIcon icon = new ImageIcon(this.imagePath);
                     Image img = icon.getImage().getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH);
                     setIcon(new ImageIcon(img));
+                    this.isContent = true;
                 }
                 case "enrgzr" -> {
                     this.type = CellType.ENERGIZER;
@@ -95,6 +116,10 @@ public class Cell extends JLabel {
                     ImageIcon icon = new ImageIcon(this.imagePath);
                     Image img = icon.getImage().getScaledInstance(Cell.length, Cell.length, Image.SCALE_SMOOTH);
                     setIcon(new ImageIcon(img));
+                    this.isContent = true;
+                }
+                case "spawn" -> {
+                    this.type = CellType.SPAWN;
                 }
                 default -> this.type = CellType.EMPTY;
             }
@@ -115,10 +140,12 @@ public class Cell extends JLabel {
         setBounds(x, y, length, length);
     }
 
+    @Override
     public int getX() {
         return this.x;
     }
 
+    @Override
     public int getY() {
         return this.y;
     }
@@ -143,6 +170,39 @@ public class Cell extends JLabel {
         return this.type;
     }
 
+    protected synchronized boolean isContent() {
+        return this.isContent;
+    }
+
+    protected synchronized void setContent(boolean isContent) {
+        this.isContent = isContent;
+    }
+
+    protected synchronized void updateContent() {
+        if (!isContent) {
+            setIcon(null);
+        } else {
+            switch (this.upgrade) {
+                case "double" -> {
+                    setIcon(doubleMult);
+                }
+                case "speed" -> {
+                    setIcon(speed);
+                }
+                case "immortality" -> {
+                    setIcon(immortality);
+                }
+                case "food" -> {
+                    setIcon(food);
+                }
+                case "enrgzr" -> {
+                    setIcon(enrgzr);
+                }
+                default -> setIcon(null);
+            }
+        }
+    }
+
     public boolean checkTunnel() {
         return (this.getType() == CellType.TUNNEL);
     }
@@ -155,6 +215,7 @@ public class Cell extends JLabel {
         return this.imagePath;
     }
     
+    @Override
     public Rectangle getBounds() {
         return new Rectangle(this.x, this.y, length, length);
     }
@@ -176,10 +237,11 @@ public class Cell extends JLabel {
         return 31 * x + y;
     }
 
-    // @Override
-    // protected void paintComponent(Graphics g) {
-    //     super.paintComponent(g);
-    //     g.drawImage(this.image, this.x, this.y, length, length, this);
-    // }
+    protected synchronized String getUpgrade() {
+        return this.upgrade;
+    }
 
+    protected synchronized void setUpgrade(String upgrade) {
+        this.upgrade = upgrade;
+    }
 }
